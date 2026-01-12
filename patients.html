@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Gestion des Patients - Système Hospitalier</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+            rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-custom {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .patient-card {
+            transition: transform 0.2s;
+        }
+        .patient-card:hover {
+            transform: translateY(-2px);
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+        }
+    </style>
+    </head>
+    <body>
+        <!-- Barre de navigation -->
+        <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+            <div class="container">
+                <a class="navbar-brand" href="hospital_interface.html">
+                    <i class="fas fa-arrow-left"></i> Retour à l'interface
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <span class="navbar-text me-3" id="userInfo"></span>
+                    <button class="btn btn-outline-light btn-sm"
+                        onclick="logout()">Déconnexion</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container mt-4">
+            <h1 class="mb-4">Gestion des Patients</h1>
+
+            <!-- Statistiques -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card stats-card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Patients</h5>
+                            <h2 id="totalPatients">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Chambres Occupées</h5>
+                            <h2 id="occupiedRooms">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Âge Moyen</h5>
+                            <h2 id="averageAge">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Maladies</h5>
+                            <h2 id="uniqueDiseases">0</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graphique -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card card-custom">
+                        <div class="card-header">
+                            <h5>Répartition par Maladie</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="diseaseChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Barre d'outils -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card card-custom">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <input type="text" id="searchInput"
+                                        class="form-control"
+                                        placeholder="Rechercher un patient...">
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-custom"
+                                            onclick="showAddPatientModal()">
+                                            <i class="fas fa-plus"></i> Ajouter
+                                            Patient
+                                        </button>
+                                        <button class="btn btn-outline-primary"
+                                            onclick="exportPatients()">
+                                            <i class="fas fa-download"></i>
+                                            Exporter
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des patients -->
+            <div class="row">
+                <div class="col-12">
+                    <div id="patientsGrid" class="row"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal d'ajout/modification de patient -->
+        <div class="modal fade" id="patientModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTitle">Ajouter un
+                            Patient</h5>
+                        <button type="button" class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="patientForm">
+                            <div class="mb-3">
+                                <label for="patientNom"
+                                    class="form-label">Nom</label>
+                                <input type="text" class="form-control"
+                                    id="patientNom" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="patientPrenom"
+                                    class="form-label">Prénom</label>
+                                <input type="text" class="form-control"
+                                    id="patientPrenom" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="patientAge"
+                                    class="form-label">Âge</label>
+                                <input type="number" class="form-control"
+                                    id="patientAge" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="patientMaladie"
+                                    class="form-label">Maladie</label>
+                                <input type="text" class="form-control"
+                                    id="patientMaladie" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="patientChambre"
+                                    class="form-label">Chambre</label>
+                                <input type="number" class="form-control"
+                                    id="patientChambre" required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">Annuler</button>
+                        <button type="button" class="btn btn-custom"
+                            onclick="savePatient()">Enregistrer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+        let patients = [];
+        let currentPatientId = null;
+        let diseaseChart = null;
+
+        // Initialisation
+        window.onload = function() {
+            const currentUser = sessionStorage.getItem('current_user');
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const user = JSON.parse(currentUser);
+            // Administrateurs n'accèdent pas à cette page
+            if (user.role === 'admin') {
+                window.location.href = 'admin.html';
+                return;
+            }
+
+            document.getElementById('userInfo').textContent = `Connecté en tant que ${user.name} (${user.role})`;
+
+            loadPatients();
+            setupSearch();
+        };
+
+        // Charger les patients
+        function loadPatients() {
+            patients = JSON.parse(localStorage.getItem('hospital_patients') || '[]');
+            displayPatients(patients);
+            updateStats();
+            updateChart();
+        }
+
+        // Afficher les patients
+        function displayPatients(patientList) {
+            const grid = document.getElementById('patientsGrid');
+            grid.innerHTML = '';
+
+            if (patientList.length === 0) {
+                grid.innerHTML = '<div class="col-12"><p class="text-center">Aucun patient trouvé.</p></div>';
+                return;
+            }
+
+            patientList.forEach(patient => {
+                const card = `
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card card-custom patient-card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">${patient.prenom} ${patient.nom}</h5>
+                                <p class="card-text">
+                                    <strong>Âge:</strong> ${patient.age} ans<br>
+                                    <strong>Maladie:</strong> ${patient.maladie}<br>
+                                    <strong>Chambre:</strong> ${patient.chambre}
+                                </p>
+                            </div>
+                            <div class="card-footer">
+                                <button class="btn btn-sm btn-outline-primary me-2" onclick="editPatient(${patient.id})">
+                                    <i class="fas fa-edit"></i> Modifier
+                                </button>
+                                <button class="btn btn-sm btn-outline-info me-2" onclick="viewPatientDetails(${patient.id})">
+                                    <i class="fas fa-eye"></i> Détails
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deletePatient(${patient.id})">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.innerHTML += card;
+            });
+        }
+
+        // Mettre à jour les statistiques
+        function updateStats() {
+            document.getElementById('totalPatients').textContent = patients.length;
+
+            const rooms = [...new Set(patients.map(p => p.chambre))];
+            document.getElementById('occupiedRooms').textContent = rooms.length;
+
+            if (patients.length > 0) {
+                const avgAge = Math.round(patients.reduce((sum, p) => sum + p.age, 0) / patients.length);
+                document.getElementById('averageAge').textContent = avgAge;
+            }
+
+            const diseases = [...new Set(patients.map(p => p.maladie))];
+            document.getElementById('uniqueDiseases').textContent = diseases.length;
+        }
+
+        // Mettre à jour le graphique
+        function updateChart() {
+            const diseaseCount = {};
+            patients.forEach(patient => {
+                diseaseCount[patient.maladie] = (diseaseCount[patient.maladie] || 0) + 1;
+            });
+
+            const ctx = document.getElementById('diseaseChart').getContext('2d');
+
+            if (diseaseChart) {
+                diseaseChart.destroy();
+            }
+
+            diseaseChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(diseaseCount),
+                    datasets: [{
+                        data: Object.values(diseaseCount),
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                            '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Configuration de la recherche
+        function setupSearch() {
+            document.getElementById('searchInput').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const filteredPatients = patients.filter(patient =>
+                    patient.nom.toLowerCase().includes(searchTerm) ||
+                    patient.prenom.toLowerCase().includes(searchTerm) ||
+                    patient.maladie.toLowerCase().includes(searchTerm)
+                );
+                displayPatients(filteredPatients);
+            });
+        }
+
+        // Afficher le modal d'ajout
+        function showAddPatientModal() {
+            currentPatientId = null;
+            document.getElementById('modalTitle').textContent = 'Ajouter un Patient';
+            document.getElementById('patientForm').reset();
+            new bootstrap.Modal(document.getElementById('patientModal')).show();
+        }
+
+        // Modifier un patient
+        function editPatient(id) {
+            const patient = patients.find(p => p.id === id);
+            if (patient) {
+                currentPatientId = id;
+                document.getElementById('modalTitle').textContent = 'Modifier le Patient';
+                document.getElementById('patientNom').value = patient.nom;
+                document.getElementById('patientPrenom').value = patient.prenom;
+                document.getElementById('patientAge').value = patient.age;
+                document.getElementById('patientMaladie').value = patient.maladie;
+                document.getElementById('patientChambre').value = patient.chambre;
+                new bootstrap.Modal(document.getElementById('patientModal')).show();
+            }
+        }
+
+        // Sauvegarder un patient
+        function savePatient() {
+            const formData = {
+                nom: document.getElementById('patientNom').value,
+                prenom: document.getElementById('patientPrenom').value,
+                age: parseInt(document.getElementById('patientAge').value),
+                maladie: document.getElementById('patientMaladie').value,
+                chambre: parseInt(document.getElementById('patientChambre').value)
+            };
+
+            if (currentPatientId) {
+                // Modification
+                const index = patients.findIndex(p => p.id === currentPatientId);
+                if (index !== -1) {
+                    patients[index] = { ...patients[index], ...formData };
+                }
+            } else {
+                // Ajout
+                formData.id = Date.now();
+                patients.push(formData);
+            }
+
+            localStorage.setItem('hospital_patients', JSON.stringify(patients));
+            bootstrap.Modal.getInstance(document.getElementById('patientModal')).hide();
+            loadPatients();
+        }
+
+        // Supprimer un patient
+        function deletePatient(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce patient ?')) {
+                patients = patients.filter(p => p.id !== id);
+                localStorage.setItem('hospital_patients', JSON.stringify(patients));
+                loadPatients();
+            }
+        }
+
+        // Voir les détails d'un patient
+        function viewPatientDetails(id) {
+            const patient = patients.find(p => p.id === id);
+            if (patient) {
+                alert(`Détails du patient:\n\nNom: ${patient.prenom} ${patient.nom}\nÂge: ${patient.age} ans\nMaladie: ${patient.maladie}\nChambre: ${patient.chambre}`);
+            }
+        }
+
+        // Exporter les patients
+        function exportPatients() {
+            const dataStr = JSON.stringify(patients, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'patients_export.json';
+            link.click();
+        }
+
+        // Déconnexion
+        function logout() {
+            sessionStorage.removeItem('current_user');
+            window.location.href = 'login.html';
+        }
+    </script>
+    </body>
+</html>

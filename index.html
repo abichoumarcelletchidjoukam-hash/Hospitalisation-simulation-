@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Portail Utilisateur avec Chat & Gestion Admin</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    header {
+      background: #fff;
+      padding: 20px 10px;
+      text-align: center;
+      border-bottom: 3px solid #5a3e9d;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      position: relative;
+      z-index: 1000;
+    }
+
+    header img {
+      max-width: 90px;
+      margin-bottom: 8px;
+      filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.1));
+    }
+
+    header h2 {
+      margin: 0;
+      color: #5a3e9d;
+      font-weight: 700;
+    }
+
+    .view {
+      display: none;
+      max-width: 480px;
+      margin: 30px auto 100px;
+      background: #fff;
+      border-radius: 15px;
+      padding: 30px 25px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.6s ease forwards;
+    }
+
+    .active {
+      display: block;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 14px 15px;
+      margin: 15px 0;
+      border-radius: 8px;
+      border: 1.8px solid #d0cce9;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #5a3e9d;
+      box-shadow: 0 0 8px #5a3e9daa;
+    }
+
+    button {
+      background: #5a3e9d;
+      border: none;
+      color: #fff;
+      padding: 14px;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      font-weight: 700;
+      box-shadow: 0 5px 10px #5a3e9dbb;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    button:hover {
+      background: #764ba2;
+      transform: scale(1.05);
+    }
+
+    nav {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    nav button {
+      width: auto;
+      margin: 0 8px;
+      padding: 10px 20px;
+      font-weight: 600;
+      background: #764ba2;
+      box-shadow: 0 4px 12px #764ba2bb;
+    }
+
+    nav button:hover {
+      background: #5a3e9d;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 18px;
+    }
+
+    th,
+    td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    th {
+      background: #f1eefe;
+      color: #5a3e9d;
+      font-weight: 700;
+    }
+
+    .error {
+      color: #d93025;
+      font-weight: 600;
+      text-align: center;
+      margin-top: -10px;
+    }
+
+    .success {
+      color: #188038;
+      font-weight: 600;
+      text-align: center;
+      margin-top: -10px;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Notifications */
+    #notifications {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      width: 280px;
+      z-index: 9999;
+    }
+
+    .notification {
+      background: #5a3e9d;
+      color: white;
+      padding: 12px 20px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(90, 62, 157, 0.5);
+      opacity: 0;
+      animation: notifFadeIn 0.5s forwards, notifFadeOut 0.5s 3.5s forwards;
+    }
+
+    @keyframes notifFadeIn {
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes notifFadeOut {
+      to {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+    }
+
+    /* Chat */
+    #chatView {
+      display: none;
+      max-width: 480px;
+      margin: 20px auto 40px;
+      background: #fff;
+      border-radius: 15px;
+      padding: 15px 15px 0 15px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.6s ease forwards;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #chatMessages {
+      flex-grow: 1;
+      height: 250px;
+      overflow-y: auto;
+      border: 1px solid #d0cce9;
+      border-radius: 10px;
+      padding: 10px;
+      background: #f9f7ff;
+      margin-bottom: 10px;
+    }
+
+    .chat-message {
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+
+    .chat-message.user {
+      background: #5a3e9d;
+      color: white;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .chat-message.other {
+      background: #ddd6ff;
+      color: #333;
+    }
+
+    #chatInput {
+      display: flex;
+    }
+
+    #chatInput textarea {
+      flex-grow: 1;
+      height: 50px;
+      font-size: 1rem;
+      border-radius: 10px 0 0 10px;
+      border: 1.8px solid #d0cce9;
+      padding: 10px;
+      resize: none;
+    }
+
+    #chatInput button {
+      border-radius: 0 10px 10px 0;
+      padding: 0 20px;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    #chatReturnBtn {
+      margin-bottom: 10px;
+      background: #764ba2;
+      box-shadow: 0 4px 12px #764ba2bb;
+      font-weight: 600;
+    }
+
+    #chatReturnBtn:hover {
+      background: #5a3e9d;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png" alt="Logo">
+    <h2>Portail Utilisateur</h2>
+  </header>
+
+  <div id="notifications"></div>
+
+  <!-- LOGIN VIEW -->
+  <div id="loginView" class="view active">
+    <h3>Connexion</h3>
+    <div id="loginError" class="error"></div>
+    <input type="text" id="loginUsername" placeholder="Nom d'utilisateur" autocomplete="username" />
+    <input type="password" id="loginPassword" placeholder="Mot de passe" autocomplete="current-password" />
+    <button onclick="login()">Se connecter</button>
+    <button style="margin-top: 15px; background: #764ba2;" onclick="showView('registerView')">Créer un compte</button>
+  </div>
+
+  <!-- REGISTER VIEW -->
+  <div id="registerView" class="view">
+    <h3>Créer un compte</h3>
+    <div id="registerError" class="error"></div>
+    <div id="registerSuccess" class="success"></div>
+    <input type="text" id="registerUsername" placeholder="Nom d'utilisateur" autocomplete="username" />
+    <input type="password" id="registerPassword" placeholder="Mot de passe" autocomplete="new-password" />
+    <select id="registerRole">
+      <option value="étudiant">Étudiant</option>
+      <option value="enseignant">Enseignant</option>
+    </select>
+    <button onclick="register()">Créer mon compte</button>
+    <button style="margin-top: 15px; background: #d93025;" onclick="showView('loginView')">Retour à la
+      connexion</button>
+  </div>
+
+  <!-- MAIN VIEW -->
+  <div id="mainView" class="view">
+    <nav>
+      <button onclick="showView('chatView')">Chat</button>
+      <button id="adminBtn" style="display:none;" onclick="showView('adminView')">Administration</button>
+      <button onclick="logout()">Déconnexion</button>
+    </nav>
+    <h3>Bienvenue, <span id="welcomeUser"></span> !</h3>
+    <p>Utilisez le menu pour accéder aux fonctionnalités.</p>
+  </div>
+
+  <!-- CHAT VIEW -->
+  <div id="chatView" class="view">
+    <nav>
+      <button id="chatReturnBtn" onclick="showView('mainView')">Retour</button>
+      <button onclick="logout()">Déconnexion</button>
+    </nav>
+    <div id="chatMessages"></div>
+    <div id="chatInput">
+      <textarea id="chatMessageInput" placeholder="Écris un message..."></textarea>
+      <button onclick="sendMessage()">Envoyer</button>
+    </div>
+  </div>
+
+  <!-- ADMIN VIEW -->
+  <div id="adminView" class="view">
+    <nav>
+      <button onclick="showView('mainView')">Accueil</button>
+      <button onclick="showView('chatView')">Chat</button>
+      <button onclick="logout()">Déconnexion</button>
+    </nav>
+    <h3>Gestion des utilisateurs</h3>
+    <table id="userTable" aria-label="Liste des utilisateurs">
+      <thead>
+        <tr>
+          <th>Nom d'utilisateur</th>
+          <th>Rôle</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    // ---- UTILITAIRES ----
+    function escapeHTML(text) {
+      const div = document.createElement('div');
+      div.innerText = text;
+      return div.innerHTML;
+    }
+
+    function notify(message) {
+      const container = document.getElementById('notifications');
+      const notif = document.createElement('div');
+      notif.className = 'notification';
+      notif.innerText = message;
+      container.appendChild(notif);
+      setTimeout(() => {
+        notif.remove();
+      }, 4000);
+    }
+
+    // ---- STOCKAGE UTILISATEURS ----
+    // Structure user: { username, password, role }
+    function getUsers() {
+      const usersStr = localStorage.getItem('users');
+      if (!usersStr) {
+        // Créer l'admin Benoît par défaut si pas d'utilisateur
+        const benoit = { username: 'benoit', password: 'admin123', role: 'enseignant' };
+        localStorage.setItem('users', JSON.stringify([benoit]));
+        return [benoit];
+      }
+      return JSON.parse(usersStr);
+    }
+    function saveUsers(users) {
+      localStorage.setItem('users', JSON.stringify(users));
+    }
+
+    // ---- AUTHENTIFICATION ----
+    function login() {
+      clearMessages();
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      if (!username || !password) {
+        showError('loginError', "Veuillez remplir tous les champs");
+        return;
+      }
+      const users = getUsers();
+      const user = users.find(u => u.username === username && u.password === password);
+      if (!user) {
+        showError('loginError', "Nom d'utilisateur ou mot de passe incorrect");
+        return;
+      }
+      localStorage.setItem('currentUser', user.username);
+      localStorage.setItem('currentUserRole', user.role);
+      updateWelcome();
+      showView('mainView');
+      clearLoginInputs();
+      checkAdminBtn();
+    }
+    function logout() {
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('currentUserRole');
+      showView('loginView');
+    }
+    function register() {
+      clearMessages();
+      const username = document.getElementById('registerUsername').value.trim();
+      const password = document.getElementById('registerPassword').value.trim();
+      const role = document.getElementById('registerRole').value;
+      if (!username || !password) {
+        showError('registerError', "Veuillez remplir tous les champs");
+        return;
+      }
+      if (!/^[a-zA-Z0-9_-]{3,15}$/.test(username)) {
+        showError('registerError', "Le nom d'utilisateur doit faire entre 3 et 15 caractères et ne contenir que lettres, chiffres, '-' ou '_'");
+        return;
+      }
+      if (password.length < 4) {
+        showError('registerError', "Le mot de passe doit contenir au moins 4 caractères");
+        return;
+      }
+      const users = getUsers();
+      if (users.find(u => u.username === username)) {
+        showError('registerError', "Ce nom d'utilisateur est déjà pris");
+        return;
+      }
+      users.push({ username, password, role });
+      saveUsers(users);
+      showSuccess('registerSuccess', "Compte créé avec succès, connectez-vous.");
+      clearRegisterInputs();
+    }
+
+    // ---- AFFICHAGE MESSAGES D'ERREUR/CONFIRMATION ----
+    function showError(id, message) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = message;
+      }
+    }
+    function showSuccess(id, message) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = message;
+      }
+    }
+    function clearMessages() {
+      ['loginError', 'registerError', 'registerSuccess'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '';
+      });
+    }
+    function clearLoginInputs() {
+      document.getElementById('loginUsername').value = '';
+      document.getElementById('loginPassword').value = '';
+    }
+    function clearRegisterInputs() {
+      document.getElementById('registerUsername').value = '';
+      document.getElementById('registerPassword').value = '';
+    }
+
+    // ---- NAVIGATION VUES ----
+    function showView(viewId) {
+      document.querySelectorAll('.view').forEach(view => {
+        view.classList.remove('active');
+      });
+      const view = document.getElementById(viewId);
+      if (view) {
+        view.classList.add('active');
+      }
+      if (viewId === 'adminView') loadUsers();
+      if (viewId === 'mainView') updateWelcome();
+      if (viewId === 'chatView') renderChatMessages();
+    }
+
+    // ---- WELCOME USER ----
+    function updateWelcome() {
+      const user = localStorage.getItem('currentUser');
+      if (user) {
+        document.getElementById('welcomeUser').innerText = user;
+      }
+    }
+    // Montrer bouton admin uniquement si utilisateur enseignant
+    function checkAdminBtn() {
+      const role = localStorage.getItem('currentUserRole');
+      const adminBtn = document.getElementById('adminBtn');
+      if (role === 'enseignant') {
+        adminBtn.style.display = 'inline-block';
+      } else {
+        adminBtn.style.display = 'none';
+      }
+    }
+
+    // ---- ADMIN : GESTION UTILISATEURS ----
+    function loadUsers() {
+      const tbody = document.querySelector('#userTable tbody');
+      tbody.innerHTML = '';
+      const users = getUsers();
+      users.forEach(user => {
+        const tr = document.createElement('tr');
+
+        // Rôles disponibles (on peut ajouter d'autres si besoin)
+        const roleOptions = ['étudiant', 'enseignant'];
+        let optionsHTML = '';
+        roleOptions.forEach(role => {
+          optionsHTML += `<option value="${role}"${role === user.role ? ' selected' : ''}>${role}</option>`;
+        });
+
+        tr.innerHTML = `
+        <td>${escapeHTML(user.username)}</td>
+        <td>
+          <select onchange="changeUserRole('${escapeHTML(user.username)}', this.value)" ${user.username === 'benoit' ? 'disabled title="Rôle administrateur non modifiable"' : ''}>
+            ${optionsHTML}
+          </select>
+        </td>
+        <td>
+          <button onclick="deleteUser('${escapeHTML(user.username)}')" ${user.username === 'benoit' ? 'disabled title="Impossible de supprimer Benoît"' : ''}>Supprimer</button>
+        </td>
+      `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function changeUserRole(username, newRole) {
+      const users = getUsers();
+      const user = users.find(u => u.username === username);
+      if (!user) return;
+
+      // Empêcher de modifier le rôle de Benoît
+      if (username === 'benoit') {
+        notify('Le rôle de Benoît ne peut pas être modifié.');
+        loadUsers();
+        return;
+      }
+
+      user.role = newRole;
+      saveUsers(users);
+
+      // Si on modifie son propre rôle et qu'on perd les droits, déconnexion
+      const currentUser = localStorage.getItem('currentUser');
+      if (currentUser === username && newRole !== 'enseignant') {
+        alert('Votre rôle a changé, vous allez être déconnecté.');
+        logout();
+        return;
+      }
+      updateWelcome();
+      checkAdminBtn();
+      notify(`Rôle de ${username} changé en "${newRole}"`);
+    }
+
+    function deleteUser(username) {
+      if (username === 'benoit') {
+        alert("Impossible de supprimer Benoît, administrateur principal.");
+        return;
+      }
+      if (!confirm(`Voulez-vous vraiment supprimer l'utilisateur "${username}" ?`)) return;
+
+      let users = getUsers();
+      users = users.filter(u => u.username !== username);
+      saveUsers(users);
+      notify(`Utilisateur "${username}" supprimé.`);
+      loadUsers();
+    }
+
+    // ---- CHAT ----
+    // Structure d'un message: { sender, content, timestamp }
+    function getChatMessages() {
+      const msgsStr = localStorage.getItem('chatMessages');
+      return msgsStr ? JSON.parse(msgsStr) : [];
+    }
+    function saveChatMessages(messages) {
+      localStorage.setItem('chatMessages', JSON.stringify(messages));
+    }
+    function renderChatMessages() {
+      const container = document.getElementById('chatMessages');
+      container.innerHTML = '';
+      const messages = getChatMessages();
+      const currentUser = localStorage.getItem('currentUser');
+      messages.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = 'chat-message ' + (msg.sender === currentUser ? 'user' : 'other');
+        const time = new Date(msg.timestamp);
+        const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        div.innerHTML = `<strong>${escapeHTML(msg.sender)}</strong> [${timeStr}]:<br>${escapeHTML(msg.content)}`;
+        container.appendChild(div);
+      });
+      container.scrollTop = container.scrollHeight;
+    }
+    function sendMessage() {
+      const input = document.getElementById('chatMessageInput');
+      const msg = input.value.trim();
+      if (!msg) return;
+      const currentUser = localStorage.getItem('currentUser');
+      if (!currentUser) {
+        alert("Vous devez être connecté pour envoyer un message.");
+        showView('loginView');
+        return;
+      }
+      const messages = getChatMessages();
+      messages.push({ sender: currentUser, content: msg, timestamp: Date.now() });
+      saveChatMessages(messages);
+      input.value = '';
+      renderChatMessages();
+    }
+
+    // ---- INITIALISATION ----
+    (function init() {
+      if (localStorage.getItem('currentUser')) {
+        updateWelcome();
+        checkAdminBtn();
+        showView('mainView');
+      } else {
+        showView('loginView');
+      }
+    })();
+
+  </script>
+
+</body>
+
+</html>
